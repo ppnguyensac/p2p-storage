@@ -11,9 +11,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// where uploaded files temporarily live
 const upload = multer({ dest: path.join(__dirname, "uploads") });
 
-// IMPORT NEW
+// serve frontend UI
 const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir));
 
@@ -74,20 +75,82 @@ async function init() {
 
 // ---------------- Routes ----------------
 
+// backend health
 app.get("/health", (req, res) => {
   res.json({ ok: true });
+});
+
+// Real-time node health check
+app.get("/nodes/status", async (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    const results = [];
+
+    for (const node of nodes) {
+      const start = Date.now();
+      try {
+        const response = await axios.get(`${node.url}/health`, {
+          timeout: 1000, // 1 second timeout
+        });
+        const latency = Date.now() - start;
+
+        results.push({
+          nodeId: node.nodeId,
+          url: node.url,
+          online: true,
+          latencyMs: latency,
+          lastChecked: now,
+          healthPayload: response.data,
+        });
+      } catch (err) {
+        results.push({
+          nodeId: node.nodeId,
+          url: node.url,
+          online: false,
+          latencyMs: null,
+          lastChecked: now,
+          error: err.message,
+        });
+      }
+    }
+
+    res.json({
+      checkedAt: now,
+      nodes: results,
+    });
+  } catch (err) {
+    console.error("NODE STATUS ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Upload a file: expects form-data with `owner` (eth address) and `file`
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    const owner = req.body.owner;
+    const owner = (req.body.owner || "").trim();
 
     if (!owner) {
-      return res.status(400).json({ error: "owner (address) required" });
+      return res.status(400).json({
+        error: "Owner address is required.",
+        code: "MISSING_OWNER",
+      });
     }
+
     if (!req.file) {
-      return res.status(400).json({ error: "file required" });
+      return res.status(400).json({
+        error: "You must select a file to upload.",
+        code: "MISSING_FILE",
+      });
+    }
+
+    // Make sure owner is one of the Ganache accounts
+    const accounts = await web3.eth.getAccounts();
+    if (!accounts.includes(owner)) {
+      return res.status(400).json({
+        error:
+          "Owner address must be one of the Ganache accounts shown in ganache-cli.",
+        code: "INVALID_OWNER",
+      });
     }
 
     const filePath = req.file.path;
@@ -111,6 +174,30 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
     const replicas = nodes.map((n) => n.nodeId);
 
+    // Optional: check if this fileId is already registered to avoid revert
+    try {
+      const existing = await registry.methods.getFile(fileId).call();
+      const existingOwner = existing[0];
+
+      if (
+        existingOwner &&
+        existingOwner !== "0x0000000000000000000000000000000000000000"
+      ) {
+        return res.status(409).json({
+          error:
+            "This file is already registered on-chain for that owner address.",
+          code: "FILE_ALREADY_REGISTERED",
+          fileId,
+        });
+      }
+    } catch (e) {
+      // If getFile reverts for unknown file, just log and continue
+      console.log(
+        "getFile pre-check error (likely not registered yet):",
+        e.message
+      );
+    }
+
     // store file on each node HTTP server
     for (const node of nodes) {
       const form = new FormData();
@@ -124,14 +211,31 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     // register file on chain (owner is msg.sender)
-    await registry.methods
-      .registerFile(fileId, fileHash, size, replicas)
-      .send({ from: owner, gas: 500000 });
+    try {
+      await registry.methods
+        .registerFile(fileId, fileHash, size, replicas)
+        .send({ from: owner, gas: 500000 });
+    } catch (err) {
+      console.error("REGISTERFILE REVERT:", err);
 
-    res.json({ ok: true, fileId, fileHash, size, replicas });
+      let userError = "On-chain file registration reverted.";
+      if (err && err.reason) {
+        userError += " Reason: " + err.reason;
+      }
+
+      return res.status(500).json({
+        error: userError,
+        code: "ONCHAIN_REVERT",
+      });
+    }
+
+    return res.json({ ok: true, fileId, fileHash, size, replicas });
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      error: "Unexpected server error during upload.",
+      code: "SERVER_ERROR",
+    });
   }
 });
 
@@ -143,7 +247,7 @@ app.get("/file/:fileId", async (req, res) => {
 
     const owner = result[0];
     const fileHash = result[1];
-    const size = Number(result[2]);   // BigInt -> Number
+    const size = Number(result[2]); // BigInt -> Number
     const replicas = result[3];
 
     res.json({ owner, fileHash, size, replicas });
@@ -161,7 +265,7 @@ app.get("/file/:fileId/nodes", async (req, res) => {
     const result = await registry.methods.getFile(fileId).call();
     const owner = result[0];
     const fileHash = result[1];
-    const size = Number(result[2]);   // BigInt -> Number
+    const size = Number(result[2]); // BigInt -> Number
     const replicas = result[3];
 
     const nodeInfos = [];

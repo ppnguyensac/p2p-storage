@@ -174,12 +174,124 @@
     code {
       font-size: 0.85rem;
     }
+
+    /* --- NODE HEALTH STYLES --- */
+    .node-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .node-card {
+      flex: 1 1 260px;
+      min-width: 240px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .node-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .status-online {
+      background: rgba(22, 163, 74, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(74, 222, 128, 0.6);
+    }
+
+    .status-degraded {
+      background: rgba(234, 179, 8, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.6);
+    }
+
+    .status-offline {
+      background: rgba(248, 113, 113, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(248, 113, 113, 0.6);
+    }
+
+    .status-online .status-dot {
+      color: #22c55e;
+    }
+
+    .status-degraded .status-dot {
+      color: #facc15;
+    }
+
+    .status-offline .status-dot {
+      color: #f97373;
+    }
+
+    .node-meta {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .node-meta strong {
+      color: #e5e7eb;
+    }
+
+    .node-url {
+      font-size: 0.8rem;
+      color: #93c5fd;
+      word-break: break-all;
+    }
+
+    .node-updated {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    #nodeHealthStatus {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>P2P Storage + Blockchain Demo</h1>
 
+    <!-- NODE HEALTH SECTION -->
+    <div class="section-title">Node Health</div>
+    <div id="nodeHealthStatus">Checking node status…</div>
+    <div id="nodeHealthGrid" class="node-grid"></div>
+
+    <!-- UPLOAD FORM -->
     <form id="uploadForm">
       <label for="owner">Owner address (Ganache account)</label>
       <input
@@ -233,6 +345,9 @@
     const refreshMetaBtn = document.getElementById("refreshMetaBtn");
     const refreshNodesBtn = document.getElementById("refreshNodesBtn");
 
+    const nodeHealthGrid = document.getElementById("nodeHealthGrid");
+    const nodeHealthStatus = document.getElementById("nodeHealthStatus");
+
     let lastFileId = null;
 
     function setStatus(msg, type = "") {
@@ -240,6 +355,99 @@
       statusEl.className = type;
     }
 
+    // ---------- NODE HEALTH ----------
+    function classifyStatus(node) {
+      if (!node.online) return "offline";
+      if (node.latencyMs != null && node.latencyMs > 400) return "degraded";
+      return "online";
+    }
+
+    function formatTime(ts) {
+      if (!ts) return "n/a";
+      const d = new Date(ts);
+      return d.toLocaleTimeString();
+    }
+
+    async function fetchNodeHealth() {
+      try {
+        const res = await fetch("/nodes/status");
+        const data = await res.json();
+
+        if (!data.nodes || !Array.isArray(data.nodes)) {
+          nodeHealthStatus.textContent = "Unable to read node health.";
+          return;
+        }
+
+        nodeHealthStatus.textContent =
+          "Last updated: " + formatTime(data.checkedAt) + " (auto-refreshing)";
+
+        nodeHealthGrid.innerHTML = "";
+
+        data.nodes.forEach((node, idx) => {
+          const statusType = classifyStatus(node);
+          const card = document.createElement("div");
+          card.className = "node-card";
+
+          const header = document.createElement("div");
+          header.className = "node-header";
+
+          const title = document.createElement("div");
+          title.className = "node-title";
+          title.textContent = `Node ${idx + 1}`;
+
+          const pill = document.createElement("div");
+          pill.className = "status-pill status-" + statusType;
+
+          const dot = document.createElement("span");
+          dot.className = "status-dot";
+
+          const label = document.createElement("span");
+          if (statusType === "online") label.textContent = "Online";
+          else if (statusType === "degraded") label.textContent = "Degraded";
+          else label.textContent = "Offline";
+
+          pill.appendChild(dot);
+          pill.appendChild(label);
+
+          header.appendChild(title);
+          header.appendChild(pill);
+          card.appendChild(header);
+
+          const url = document.createElement("div");
+          url.className = "node-url";
+          url.textContent = node.url;
+          card.appendChild(url);
+
+          const meta = document.createElement("div");
+          meta.className = "node-meta";
+          const latency =
+            node.latencyMs != null ? `${node.latencyMs} ms` : "n/a";
+          meta.innerHTML =
+            "<strong>Latency:</strong> " +
+            latency +
+            " · <strong>Online:</strong> " +
+            (node.online ? "Yes" : "No");
+          card.appendChild(meta);
+
+          const updated = document.createElement("div");
+          updated.className = "node-updated";
+          updated.textContent = "Checked at: " + formatTime(node.lastChecked);
+          card.appendChild(updated);
+
+          nodeHealthGrid.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Node health error:", err);
+        nodeHealthStatus.textContent =
+          "Error checking node status: " + err.message;
+      }
+    }
+
+    // poll every 5 seconds
+    setInterval(fetchNodeHealth, 5000);
+    window.addEventListener("load", fetchNodeHealth);
+
+    // ---------- UPLOAD HANDLING ----------
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -267,7 +475,22 @@
         const data = await res.json();
         if (!res.ok || !data.ok) {
           console.error("Upload error:", data);
-          setStatus("Upload failed: " + (data.error || "Unknown error"), "error");
+
+          let msg = data.error || "Unknown error";
+
+          if (data.code === "FILE_ALREADY_REGISTERED") {
+            msg =
+              "This exact file is already registered on-chain for that owner. Try a different file or a different owner address.";
+          } else if (data.code === "INVALID_OWNER") {
+            msg =
+              "Owner must be one of the Ganache accounts (copy it directly from the ganache-cli output).";
+          } else if (data.code === "MISSING_FILE") {
+            msg = "Please choose a file before uploading.";
+          } else if (data.code === "MISSING_OWNER") {
+            msg = "Please enter an owner address.";
+          }
+
+          setStatus("Upload failed: " + msg, "error");
           uploadBtn.disabled = false;
           return;
         }
@@ -280,7 +503,6 @@
         resultSection.style.display = "block";
         setStatus("Upload successful!", "success");
 
-        // Immediately fetch metadata + nodes
         await refreshMetadata();
         await refreshNodes();
       } catch (err) {
