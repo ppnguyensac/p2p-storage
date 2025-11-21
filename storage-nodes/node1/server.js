@@ -33,6 +33,7 @@ app.get("/get/:fileId", (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "not found" });
   }
+  res.setHeader("Content-Type", "application/octet-stream");
   res.sendFile(filePath);
 });
 
@@ -40,4 +41,3 @@ const PORT = 4001;
 app.listen(PORT, () => {
   console.log("Storage node1 listening on port", PORT);
 });
-

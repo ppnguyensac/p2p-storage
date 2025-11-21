@@ -559,6 +559,48 @@
       refreshNodes();
     });
   </script>
+
+  <script src="registry.js"></script>
+
+<script>
+  let web3;
+  let registry;
+
+  async function initWeb3() {
+    if (window.ethereum) {
+      await ethereum.request({ method: "eth_requestAccounts" });
+      web3 = new Web3(window.ethereum);
+    } else {
+      web3 = new Web3("http://127.0.0.1:8545");
+    }
+
+    registry = new web3.eth.Contract(registryAbi, registryAddress);
+    console.log("Connected to registry", registryAddress);
+  }
+
+  async function lookupFile(fileIdHex) {
+    try {
+      const res = await registry.methods.getFile(fileIdHex).call();
+      console.log("getFile() returned:", res);
+      return res;
+    } catch (err) {
+      console.error("getFile() error:", err);
+    }
+  }
+
+  async function lookupNode(nodeId) {
+    try {
+      const res = await registry.methods.getNode(nodeId).call();
+      console.log("getNode() returned:", res);
+      return res;
+    } catch (err) {
+      console.error("Node lookup error:", err);
+    }
+  }
+
+  initWeb3();
+</script>
+
 </body>
 </html>
 
