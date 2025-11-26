@@ -9,7 +9,7 @@ const FormData = require("form-data");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // parse JSON bodies
 
 // where uploaded files temporarily live
 const upload = multer({ dest: path.join(__dirname, "uploads") });
@@ -280,6 +280,29 @@ app.get("/file/:fileId/nodes", async (req, res) => {
   } catch (err) {
     console.error("GET FILE NODES ERROR:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Set per-file settings (download limit) and forward to storage nodes
+app.post("/file/:fileId/settings", async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    // downloadLimit: integer or null to clear
+    const downloadLimit = req.body.downloadLimit == null ? null : Number(req.body.downloadLimit);
+
+    if (downloadLimit !== null && (!Number.isInteger(downloadLimit) || downloadLimit < 1)) {
+      return res.status(400).json({ ok: false, error: "downloadLimit must be a positive integer or null" });
+    }
+
+    // forward settings to each node
+    for (const node of nodes) {
+      await axios.post(`${node.url}/set-download-limit`, { fileId, downloadLimit }, { timeout: 3000 });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("SETTINGS ERROR:", err);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
