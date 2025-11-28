@@ -303,7 +303,25 @@ app.post("/file/:fileId/settings", async (req, res) => {
   } catch (err) {
     console.error("SETTINGS ERROR:", err);
     res.status(500).json({ ok: false, error: err.message });
-  }
+  }});
+
+//Get page for plans and pricing
+app.get("/plans", async (req, res) => {
+	try{
+		res.sendFile(__dirname + "/public/plans.html");
+	}catch(err){
+		res.status(404);
+	}
+});
+
+//Get homepage
+app.get("/", async (req, res) => {
+	try{
+		res.sendFile(publicDir + "/index.html");
+	}catch(err){
+		res.status(404);
+	}
+
 });
 
 const PORT = 5000;
@@ -319,4 +337,3 @@ async function start() {
 start().catch((err) => {
   console.error("Fatal error starting backend:", err);
 });
-
