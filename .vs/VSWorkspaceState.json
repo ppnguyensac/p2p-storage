@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\backend",
+    "\\backend\\public",
+    "\\build",
+    "\\build\\contracts",
+    "\\contracts",
+    "\\migrations",
+    "\\storage-nodes",
+    "\\storage-nodes\\node1",
+    "\\storage-nodes\\node2",
+    "\\test"
+  ],
+  "PreviewInSolutionExplorer": false
+}
