@@ -461,10 +461,6 @@ app.get("/", async (req, res) => {
 
 });
 
-const PORT = 5000;
-
-
-
 //Download route with automatic node fallback + decryption + hash check
 app.get("/download/:fileId", async (req, res) => {
   try {
