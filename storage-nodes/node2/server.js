@@ -90,4 +90,3 @@ const PORT = 4002;
 app.listen(PORT, () => {
   console.log("Storage node2 listening on port", PORT);
 });
-
