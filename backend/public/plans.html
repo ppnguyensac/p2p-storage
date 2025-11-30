@@ -1,0 +1,170 @@
+
+<!--Will be a page for listing and buying pricing plans-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Pricing Plans</title>
+    <link rel="stylesheet" href="p2pstyles.css">
+    <style>
+		.plan-container {
+			display: flex;
+			flex-wrap: nowrap;
+			justify-content: center;
+			gap: 4px;
+		}
+    
+		.plan-card {
+			flex: 1 1 260px;
+			min-height: 20rem;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+		}
+
+		.plan-content {
+			flex: 1;
+			padding: 16px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+		}
+
+		.plan-list {
+			text-align: left;
+			padding: 0;
+			margin: 0 0 16px 0;
+			list-style-type: disc;
+			list-style-position: inside;
+		}
+
+		.wallet-grid {
+            min-width: 240px;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 2px 4px;
+            display: grid;
+            grid-template-columns: 25% 75%;
+            grid-template-rows: 25%;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 20px;
+    	}
+
+    	.wallet-title {
+			grid-column-start: 1;
+			grid-column-end: 2;
+    	}
+
+		.wallet-button {
+			grid-column-start: 2;
+			grid-column-end: 3;
+    	}
+    	
+    	.wallet-content {
+			grid-column-start: 1;
+			grid-column-end: 3;
+    	}
+
+    	.fill-btn {
+			margin-top: 18px;
+            padding: 12px 20px;
+            width: 100%;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4);
+            background-size: 200% 200%;
+            transition: 0.3s ease;
+    	}
+
+    	
+    </style>
+  </head>
+  <body>
+  	<reuseable-nav></reuseable-nav>
+	  	<div class="container">
+			<h1>Upgrade Storage</h1>
+			<p>Demo payment page - No real payment transfers. Shows how users could upgrade 
+			storage using crypto payments.</>
+			<div class="plan-container">
+			    <div class="plan-card">
+					<div class="plan-content">
+						<p><span class="pill">Current Plan</span></p>
+						<h2>Free</h2>
+						<p>Up to <span style="font-weight:bold">1GB</span> of replicated 
+						storage.</p>
+						<ul class="plan-list">
+							<li>Basic P2P replication</li>
+							<li>Public testnet-only uploads</li>
+							<li>Limited file history view</li>
+						</ul>
+				    </div>
+				    <button>Current Plan</button>
+			    </div>
+			    <div class="plan-card">
+					<div class="plan-content">
+			    		<p><span class="pill">Most Popular</span></p>
+			    		<h2>Pro-Storage</h2>
+						<p>Up to <span style="font-weight:bold">10GB</span> of replicated 
+						storage.</p>
+						<ul class="plan-list">
+							<li>Priority replication accross nodes</li>
+							<li>Extended file retention</li>
+							<li>On-chain usage receipts</li>
+						</ul>
+					</div>
+			    	<button>Pay with Crypto (Demo)</button>
+			    </div>
+			    <div class="plan-card">
+			    	<div class="plan-content">
+						<p><span class="pill">Enterprise</span></p>
+			    		<h2>Validator</h2>
+						<p>Up to <span style="font-weight:bold">100GB</span> of replicated 
+						storage.</p>
+						<ul class="plan-list">
+							<li>Run your own dedicated storage nodes</li>
+							<li>Custom replication policies</li>
+							<li>DAO governance participation (demo)</li>
+						</ul>
+			    	</div>
+			    	
+			    	<button>Pay with Crypto (Demo)</button>
+			    </div>
+			</div>
+	    	<div class="wallet-grid">
+	    		<div class="wallet-title">
+					<h2>Wallet (Demo)</h2>
+	    		</div>
+	    		<div class="wallet-button">
+	    			<button class="fill-btn">Connect Wallet(Demo)</button>
+	    		</div>
+	    		<div class="wallet-content">
+	    			<p>
+						Not Connected (Button will simulate connecting a wallet)
+	    			</p>
+					<p>
+						<span class="pill">Supported: ETH</span>
+						<span class="pill">Supported: wETH</span>
+						<span class="pill">Supported: USDC</span>
+						<span class="pill">Network: Local Ganache(demo)</span>
+	    			</p>
+	    			<p>
+						No real transactions are sent.
+	    			</p>
+	    		</div>
+	    	</div>
+	    </div>	
+    <script src="navbar.js"></script>
+  </body>
+</html>
